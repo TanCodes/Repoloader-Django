@@ -54,78 +54,106 @@ def get_repo(request):
                 print("Total repo:", TOTAL_REPO)
                 to_compare = int(TOTAL_REPO)
 
-                repos_name = []
-                repos_link = []
-                repos_language = []
-                repos_fork = []
-                repos_date = []
-
-                # Repo table
-                for items in api_data:
-                    repos_name.append(items["name"])
-
-                    item_link = items["svn_url"]
-                    repos_link.append(item_link)
-
-                    repos_language.append(items["language"])
-                    final_language = ["-" if i ==
-                                      None else i for i in repos_language]
-
-                    repos_fork.append(items["fork"])
-                    final_fork = [
-                        "✅" if i == True else "❌" if i == False else 0
-                        for i in repos_fork
-                    ]
-
-                    item_date = items["updated_at"][:10]
-                    repos_date.append(item_date)
-
-                temp = list(
-                    zip(repos_name, repos_link,
-                        final_language, final_fork, repos_date)
-                )
-                df = pd.DataFrame(
-                    temp,
-                    columns=[
-                        "Project Name",
-                        "Project Link",
-                        "Main Language",
-                        "Is Forked?",
-                        "Date",
-                    ],
-                )  # Dataframe
-
-                global TABLE_REPO
-                TABLE_REPO = df.sort_values(by="Date", ascending=False).reset_index(
-                    drop=True
-                )  # Sort by dates
-
-                # TABLE_REPO_FINAL
-                TABLE_REPO_FINAL = TABLE_REPO.to_html(
-                    index="false", header="true", table_id="table"
-                )
-
-                # Data dict
-                global all_data
-                all_data = {
-                    "USERNAME": USERNAME,
-                    "NAME": NAME,
-                    "TOTAL_REPO": TOTAL_REPO,
-                    "TABLE_REPO_FINAL": TABLE_REPO_FINAL,
-                }
-
-                #  ALERT MESSAGE
-                global message
-                if to_compare > 100:
-                    message = "Only displays the first 100 updated Repos"
-                    print(message)
+                # IF REPO SIZE IS = 0 THAT MEANS IT IS AN EMPTY REPO
+                if to_compare == 0:
+                    print("EMPTY")
+                    empty_error = "This Repository is empty"
+                    return render(request, "index.html", {"ERROR": empty_error})
                 else:
-                    message = ""
+                    repos_name = []
+                    repos_link = []
+                    repos_language = []
+                    repos_fork = []
+                    repos_date = []
 
-                return render(
-                    request, "index.html", {
-                        "all_data": all_data, "message": message}
-                )
+                    # Repo table
+                    for items in api_data:
+                        repos_name.append(items["name"])
+
+                        item_link = items["svn_url"]
+                        repos_link.append(item_link)
+
+                        repos_language.append(items["language"])
+                        final_language = [
+                            "unknown" if i == None else i for i in repos_language
+                        ]
+
+                        repos_fork.append(items["fork"])
+                        final_fork = [
+                            "✅" if i == True else "❌" if i == False else 0
+                            for i in repos_fork
+                        ]
+
+                        item_date = items["updated_at"][:10]
+                        repos_date.append(item_date)
+
+                    temp = list(
+                        zip(
+                            repos_name,
+                            repos_link,
+                            final_language,
+                            final_fork,
+                            repos_date,
+                        )
+                    )
+
+                    # Number of is forked repo
+                    is_forked_count = final_fork.count("✅")
+
+                    df = pd.DataFrame(
+                        temp,
+                        columns=[
+                            "Project Name",
+                            "Project Link",
+                            "Main Language",
+                            f"Is Forked? ({is_forked_count})",
+                            "Date",
+                        ],
+                    )  # Dataframe
+
+                    global TABLE_REPO
+                    TABLE_REPO = df.sort_values(by="Date", ascending=False).reset_index(
+                        drop=True
+                    )  # Sort by dates
+
+                    # TABLE_REPO_FINAL
+                    TABLE_REPO_FINAL = TABLE_REPO.to_html(
+                        index="false", header="true", table_id="table"
+                    )
+
+                    # Data dict
+                    global all_data
+                    all_data = {
+                        "USERNAME": USERNAME,
+                        "NAME": NAME,
+                        "TOTAL_REPO": TOTAL_REPO,
+                        "TABLE_REPO_FINAL": TABLE_REPO_FINAL,
+                    }
+
+                    # PIE CHART
+                    counts = TABLE_REPO["Main Language"].value_counts()
+                    language_names = list(counts.index)
+                    language_values = counts.tolist()
+                    print("language_names", language_names)
+                    print("language_values", language_values)
+
+                    #  ALERT MESSAGE
+                    global message
+                    if to_compare > 100:
+                        message = "Only displays the first 100 updated Repos"
+                        print(message)
+                    else:
+                        message = ""
+                    return render(
+                        request,
+                        "index.html",
+                        {
+                            "all_data": all_data,
+                            "message": message,
+                            "language_values": language_values,
+                            "language_names": language_names,
+                        },
+                    )
 
             # ! ----- ELSE SHOW THE ERROR ----
             else:
