@@ -113,7 +113,9 @@ def get_repo(request):
                         )  # Dataframe
 
                         global TABLE_REPO
-                        TABLE_REPO = df.sort_values(by="Date", ascending=False).reset_index(
+                        TABLE_REPO = df.sort_values(
+                            by="Date", ascending=False
+                        ).reset_index(
                             drop=True
                         )  # Sort by dates
 
