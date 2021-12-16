@@ -24,7 +24,7 @@ def get_repo(request):
         global USERNAME
         USERNAME = request.POST["msg"]
 
-        if not USERNAME:
+        if not USERNAME or '/' in USERNAME or '?' in USERNAME:
             ERROR = "Invalid username"
             return render(request, "index.html", {"ERROR": ERROR})
         else:
@@ -60,107 +60,103 @@ def get_repo(request):
                     empty_error = "This Repository is empty"
                     return render(request, "index.html", {"ERROR": empty_error})
                 else:
-                    try:
-                        repos_name = []
-                        repos_link = []
-                        repos_language = []
-                        repos_fork = []
-                        repos_date = []
+                    repos_name = []
+                    repos_link = []
+                    repos_language = []
+                    repos_fork = []
+                    repos_date = []
 
-                        # Repo table
-                        for items in api_data:
-                            repos_name.append(items["name"])
+                    # Repo table
+                    for items in api_data:
+                        repos_name.append(items["name"])
 
-                            item_link = items["svn_url"]
-                            repos_link.append(item_link)
+                        item_link = items["svn_url"]
+                        repos_link.append(item_link)
 
-                            repos_language.append(items["language"])
-                            final_language = [
-                                "unknown" if i == None else i for i in repos_language
-                            ]
+                        repos_language.append(items["language"])
+                        final_language = [
+                            "unknown" if i == None else i for i in repos_language
+                        ]
 
-                            repos_fork.append(items["fork"])
-                            final_fork = [
-                                "✅" if i == True else "❌" if i == False else 0
-                                for i in repos_fork
-                            ]
+                        repos_fork.append(items["fork"])
+                        final_fork = [
+                            "✅" if i == True else "❌" if i == False else 0
+                            for i in repos_fork
+                        ]
 
-                            item_date = items["updated_at"][:10]
-                            repos_date.append(item_date)
+                        item_date = items["updated_at"][:10]
+                        repos_date.append(item_date)
 
-                        temp = list(
-                            zip(
-                                repos_name,
-                                repos_link,
-                                final_language,
-                                final_fork,
-                                repos_date,
-                            )
+                    temp = list(
+                        zip(
+                            repos_name,
+                            repos_link,
+                            final_language,
+                            final_fork,
+                            repos_date,
                         )
+                    )
 
-                        # Number of is forked repo
-                        is_forked_count = final_fork.count("✅")
+                    # Number of is forked repo
+                    is_forked_count = final_fork.count("✅")
 
-                        df = pd.DataFrame(
-                            temp,
-                            columns=[
-                                "Project Name",
-                                "Project Link",
-                                "Main Language",
-                                f"Is Forked? ({is_forked_count})",
-                                "Date",
-                            ],
-                        )  # Dataframe
+                    df = pd.DataFrame(
+                        temp,
+                        columns=[
+                            "Project Name",
+                            "Project Link",
+                            "Main Language",
+                            f"Is Forked? ({is_forked_count})",
+                            "Date",
+                        ],
+                    )  # Dataframe
 
-                        global TABLE_REPO
-                        TABLE_REPO = df.sort_values(
-                            by="Date", ascending=False
-                        ).reset_index(
-                            drop=True
-                        )  # Sort by dates
+                    global TABLE_REPO
+                    TABLE_REPO = df.sort_values(
+                        by="Date", ascending=False
+                    ).reset_index(
+                        drop=True
+                    )  # Sort by dates
 
-                        # TABLE_REPO_FINAL
-                        TABLE_REPO_FINAL = TABLE_REPO.to_html(
-                            index="false", header="true", table_id="table"
-                        )
+                    # TABLE_REPO_FINAL
+                    TABLE_REPO_FINAL = TABLE_REPO.to_html(
+                        index="false", header="true", table_id="table"
+                    )
 
-                        # Data dict
-                        global all_data
-                        all_data = {
-                            "USERNAME": USERNAME,
-                            "NAME": NAME,
-                            "TOTAL_REPO": TOTAL_REPO,
-                            "TABLE_REPO_FINAL": TABLE_REPO_FINAL,
-                        }
+                    # Data dict
+                    global all_data
+                    all_data = {
+                        "USERNAME": USERNAME,
+                        "NAME": NAME,
+                        "TOTAL_REPO": TOTAL_REPO,
+                        "TABLE_REPO_FINAL": TABLE_REPO_FINAL,
+                    }
 
-                        # PIE CHART
-                        counts = TABLE_REPO["Main Language"].value_counts()
-                        language_names = list(counts.index)
-                        language_values = counts.tolist()
-                        print("language_names", language_names)
-                        print("language_values", language_values)
+                    # PIE CHART
+                    counts = TABLE_REPO["Main Language"].value_counts()
+                    language_names = list(counts.index)
+                    language_values = counts.tolist()
+                    print("language_names", language_names)
+                    print("language_values", language_values)
 
-                        #  ALERT MESSAGE
-                        global message
-                        if to_compare > 100:
-                            message = "Only displays the first 100 updated Repos"
-                            print(message)
-                        else:
-                            message = ""
-                        return render(
-                            request,
-                            "index.html",
-                            {
-                                "all_data": all_data,
-                                "message": message,
-                                "language_values": language_values,
-                                "language_names": language_names,
-                            },
-                        )
-                    except ValueError or TypeError:
-                        print("Exception")
-                        ERROR = f"Invalid username {USERNAME}"
-                        return render(request, "index.html", {"ERROR": ERROR})
+                    #  ALERT MESSAGE
+                    global message
+                    if to_compare > 100:
+                        message = "Only displays the first 100 updated Repos"
+                        print(message)
+                    else:
+                        message = ""
+                    return render(
+                        request,
+                        "index.html",
+                        {
+                            "all_data": all_data,
+                            "message": message,
+                            "language_values": language_values,
+                            "language_names": language_names,
+                        },
+                    )
+
             # ! ----- ELSE SHOW THE ERROR ----
             else:
                 print(get_url.status_code)
